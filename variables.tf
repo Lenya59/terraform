@@ -27,8 +27,8 @@ variable "amis_tags" { default = ["back", "service"] }
 variable "cidr" {
   type = "map"
   default = {
-    "main"    = "10.0.0.0/24"
-    "subnet"  = "10.0.0.12"
+    "main"    = "10.0.0.0/16"
+    "subnet"  = "10.0.0.0/24"
     "all"     = "0.0.0.0/0"
     "private" = "172.0.0.0/0"
   }
@@ -45,7 +45,7 @@ variable "server_port" {
 #
 #
 #
-#https://www.terraform.io/docs/configuration/variables.html
+#  https://www.terraform.io/docs/configuration/variables.html
 #
 #
 #
