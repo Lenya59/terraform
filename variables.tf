@@ -1,4 +1,5 @@
-#hide creds from all
+################################################################################
+#hide creds from all of the world
 variable "access_key" {}
 variable "secret_key" {}
 #string type
@@ -14,22 +15,25 @@ variable "instance_type" {
   type    = "string"
   default = "t2.micro"
 }
-#
+################################################################################
 # list type
 # https://www.terraform.io/docs/configuration-0-11/variables.html
 #
 #
-#
+################################################################################
 variable "amis_tags" { default = ["back", "service"] }
-#map type
+################################################################################
+# map type
 #
 # smthng  = var.cidr["main"]
+################################################################################
 variable "cidr" {
   type = "map"
   default = {
-    "main"           = "10.0.0.0/16"
-    "public_subnet"  = "10.0.0.0/24"
-    "private_subnet" = "172.0.0.0/24"
+    "main"           = "10.20.0.0/16"
+    "public_subnet"  = "10.20.0.0/24"
+    "private_subnet" = "10.20.1.0/24"
+    "nat_subset"     = "10.20.2.0/24"
     "all"            = "0.0.0.0/0"
 
   }
