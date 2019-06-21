@@ -1,10 +1,10 @@
 ################################################################################
-# Set our cloud provider and access details,
-# such as AWS security credentials
-# https://console.aws.amazon.com/iam/home?region=us-east-1#/security_credentials
-#
-# it stored in ./terraform.tdvar
-#
+## Set our cloud provider and access details,
+## such as AWS security credentials
+## https://console.aws.amazon.com/iam/home?region=us-east-1#/security_credentials
+##
+## it stored in ./terraform.tdvar
+##
 ################################################################################
 provider "aws" {
   access_key = var.access_key
@@ -14,28 +14,27 @@ provider "aws" {
 
 data "aws_availability_zones" "available" {}
 ################################################################################
-# Create a VPC to launch main VPC-network
-# determine the CIDR block for our VPC
-#
-#
-# https://www.terraform.io/docs/providers/aws/d/vpc.html
+## Create a VPC to launch main VPC-network
+## determine the CIDR block for our VPC
+##
+##
+## https://www.terraform.io/docs/providers/aws/d/vpc.html
 ################################################################################
 resource "aws_vpc" "main-vpc" {
   cidr_block           = var.cidr["main"]
   enable_dns_hostnames = true
-  enable_dns_support   = "true"
-
+  enable_dns_support   = true
   tags = {
     Name = "MAIN_VPC"
   }
 }
 ################################################################################
-#
-# Define subnets
-#
+##
+## Define subnets
+##
 ################################################################################
 resource "aws_subnet" "front_subnet" {
-  vpc_id                  = "${aws_vpc.main-vpc.id}"
+  vpc_id                  = aws_vpc.main-vpc.id
   cidr_block              = var.cidr["public_subnet"]
   map_public_ip_on_launch = true
   availability_zone       = "us-east-1a"
@@ -50,7 +49,7 @@ resource "aws_subnet" "front_subnet" {
 #   vpc_id                  = "${aws_vpc.aws_vpc.id}"
 #   cidr_block              = var.cidr["nat_subset"]
 #   map_public_ip_on_launch = "false"
-#   availability_zone       = "${var.aws_region}a"
+#   availability_zone       = "us-east-1a"
 #   tags {
 #     Name = "backend_subnet"
 #   }
@@ -59,33 +58,41 @@ resource "aws_subnet" "front_subnet" {
 # resource "aws_subnet" "service_subnet" {
 #   vpc_id                  = "${aws_vpc.aws_vpc.id}"
 #   cidr_block              = var.cidr["private_subnet"]
-#   map_public_ip_on_launch = "false"
-#   availability_zone       = "${var.aws_region}b"
+#   map_public_ip_on_launch = false
+#   availability_zone       = "us-east-1a"
 #   tags {
 #     Name = "services_subnet"
 #   }
 # }
 ################################################################################
-# Provides a resource to create a VPC Internet Gateway
-# vpc_id - (Required) The VPC ID to create in
-#
-# https://www.terraform.io/docs/providers/aws/r/internet_gateway.html
+## Provides a resource to create a VPC Internet Gateway
+## vpc_id - (Required) The VPC ID to create in
+##
+## https://www.terraform.io/docs/providers/aws/r/internet_gateway.html
 ################################################################################
 resource "aws_internet_gateway" "gw" {
   vpc_id = "${aws_vpc.main-vpc.id}"
 }
 ################################################################################
+##
+## NAT_gateway
+##
+################################################################################
+# resource "aws_nat_gateway" "gw" {
+#   allocation_id = "${aws_eip.nat.id}"
+#   subnet_id     = "${aws_subnet.public.id}"
+#   depends_on    = ["aws_internet_gateway.gw"]
 #
-# elastic internet portal
+#   tags = {
+#     Name = "gw NAT"
+#   }
+# }
 #
 ################################################################################
-resource "aws_eip" "ip" {
-  vpc = true
-}
-################################################################################
-#
-# ROUTING
-#
+##
+## ROUTING
+##   route_table
+##
 ################################################################################
 resource "aws_route_table" "rtb" {
   vpc_id = "${aws_vpc.main-vpc.id}"
@@ -96,28 +103,19 @@ resource "aws_route_table" "rtb" {
   }
 }
 ################################################################################
-#
-# route table
-#
+##
+##  route_table_association
+##
 ################################################################################
 resource "aws_route_table_association" "rta_public_subnet" {
   subnet_id      = "${aws_subnet.front_subnet.id}"
   route_table_id = "${aws_route_table.rtb.id}"
 }
 ################################################################################
-#
-# # elastic internet portal associations
-#
-################################################################################
-resource "aws_eip_association" "eip_assoc" {
-  instance_id   = "${aws_instance.front.id}"
-  allocation_id = "${aws_eip.ip.id}"
-}
-################################################################################
-# Define security groups
-#
-# this sec group allow :443 for input/output
-#
+## Define security groups
+##
+## this sec group allow :443 for input/output
+##
 ################################################################################
 resource "aws_security_group" "front" {
   name        = "Apache Security Group"
@@ -149,7 +147,10 @@ resource "aws_security_group" "front" {
 #
 #
 ################################################################################
-# Create aws_instanse for "front"
+##
+## INSTANCES
+##   Create aws_instanse for "front"
+##
 ################################################################################
 resource "aws_instance" "front" {
   ami                    = var.ami
@@ -161,9 +162,11 @@ resource "aws_instance" "front" {
   user_data              = file("install_httpd.sh")
 }
 ################################################################################
-# Create aws_instance by ami_tags
+##
+## Create aws_instance by ami_tags
+##
 ################################################################################
-# resource "aws_instance" "web" {
+# resource "aws_instance" "back" {
 #   count         = length(var.amis_tags)
 #   ami           = var.ami
 #   instance_type = var.instance_type
