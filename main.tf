@@ -17,6 +17,7 @@ data "aws_availability_zones" "available" {}
 ## Create a VPC to launch main VPC-network
 ## determine the CIDR block for our VPC
 ##
+##                          NETWORKING
 ##
 ## https://www.terraform.io/docs/providers/aws/d/vpc.html
 ################################################################################
@@ -30,7 +31,9 @@ resource "aws_vpc" "main-vpc" {
 }
 ################################################################################
 ##
-## Define subnets
+##    Define subnets
+##
+##  https://www.terraform.io/docs/providers/aws/r/subnet.html
 ##
 ################################################################################
 resource "aws_subnet" "front_subnet" {
@@ -77,6 +80,8 @@ resource "aws_internet_gateway" "gw" {
 ##
 ## NAT_gateway
 ##
+## https://www.terraform.io/docs/providers/aws/r/nat_gateway.html
+##
 ################################################################################
 # resource "aws_nat_gateway" "gw" {
 #   allocation_id = "${aws_eip.nat.id}"
@@ -90,8 +95,10 @@ resource "aws_internet_gateway" "gw" {
 #
 ################################################################################
 ##
-## ROUTING
+##                               ROUTING
 ##   route_table
+##
+##   https://www.terraform.io/docs/providers/aws/r/route_table.html
 ##
 ################################################################################
 resource "aws_route_table" "rtb" {
@@ -106,15 +113,20 @@ resource "aws_route_table" "rtb" {
 ##
 ##  route_table_association
 ##
+##  https://www.terraform.io/docs/providers/aws/r/route_table_association.html
+##
 ################################################################################
 resource "aws_route_table_association" "rta_public_subnet" {
   subnet_id      = "${aws_subnet.front_subnet.id}"
   route_table_id = "${aws_route_table.rtb.id}"
 }
 ################################################################################
-## Define security groups
+##
+##    Define security groups
 ##
 ## this sec group allow :443 for input/output
+##
+## https://www.terraform.io/docs/providers/aws/r/security_group.html\
 ##
 ################################################################################
 resource "aws_security_group" "front" {
@@ -144,12 +156,18 @@ resource "aws_security_group" "front" {
     Name = "front_acces"
   }
 }
+# next one's need to use in this task:
+#  https://www.terraform.io/docs/providers/aws/r/network_acl.html
+#  https://www.terraform.io/docs/providers/aws/r/network_acl_rule.html
 #
 #
+##
+
 ################################################################################
 ##
-## INSTANCES
-##   Create aws_instanse for "front"
+##                            INSTANCES
+##
+## Create aws_instanse for "front"
 ##
 ################################################################################
 resource "aws_instance" "front" {
@@ -163,7 +181,7 @@ resource "aws_instance" "front" {
 }
 ################################################################################
 ##
-## Create aws_instance by ami_tags
+## Create two another instances
 ##
 ################################################################################
 # resource "aws_instance" "back" {

@@ -50,7 +50,7 @@ variable "server_port" {
 #
 #
 #
-#  https://www.terraform.io/docs/configuration/variables.html
+#      https://www.terraform.io/docs/configuration/variables.html
 #
 #
 #
@@ -59,8 +59,6 @@ variable "server_port" {
 #
 #
 #  terraform apply -auto-approve
-#
-#
 #
 #
 #
