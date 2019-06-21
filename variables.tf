@@ -27,10 +27,11 @@ variable "amis_tags" { default = ["back", "service"] }
 variable "cidr" {
   type = "map"
   default = {
-    "main"    = "10.0.0.0/16"
-    "subnet"  = "10.0.0.0/24"
-    "all"     = "0.0.0.0/0"
-    "private" = "172.0.0.0/0"
+    "main"           = "10.0.0.0/16"
+    "public_subnet"  = "10.0.0.0/24"
+    "private_subnet" = "172.0.0.0/24"
+    "all"            = "0.0.0.0/0"
+
   }
 }
 
