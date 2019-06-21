@@ -1,8 +1,6 @@
-#!/bin/bash
-sudo su-
-yum update -y
-yum install httpd -y
-myip =`curl http://169.254.169.254/latest/meta-data/local-ipv4`
-echo "<h2>ITA DevOps</h2><br>"  >>  /var/www/html/index.html
-service httpd start
-chkconfig httpd on
+#! /bin/bash
+sudo yum update
+sudo yum install -y apache2
+sudo systemctl start apache2
+sudo systemctl enable apache2
+echo "<h1>Welcome to DevOps_ITA_demo</h1>" | sudo tee /var/www/html/index.html
