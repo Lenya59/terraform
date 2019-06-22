@@ -2,6 +2,8 @@
 #hide creds from all of the world
 variable "access_key" {}
 variable "secret_key" {}
+
+
 #string type
 variable "ami" {
   type    = "string"

@@ -133,19 +133,45 @@ resource "aws_security_group" "front" {
   name        = "Apache Security Group"
   description = "Allow Https port inbound traffic"
   vpc_id      = "${aws_vpc.main-vpc.id}" #будем цеплять впс
-  #allow 443 port for input
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  ################################################################################
+  ##
+  ##    Dynamic block
+  ##
+  ## this block allow :443,80,22 port for input/output
+  ##
+  ## https://www.terraform.io/docs/configuration/expressions.html
+  ##
+  ################################################################################
+
+  dynamic "ingress" {
+    for_each = ["443", "80", "22"]
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
-  ingress { # Входящий
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"         # Любой протокол ТСР и UDP
-    cidr_blocks = ["0.0.0.0/0"] # Разрешаем ходить с инета
-  }
+
+  # #allow 443 port for input
+  # ingress {
+  #   from_port   = 443
+  #   to_port     = 443
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
+  # ingress {
+  #   from_port   = 80
+  #   to_port     = 80
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
+  # ingress { # Входящий
+  #   from_port   = 22
+  #   to_port     = 22
+  #   protocol    = "tcp"         # Любой протокол ТСР и UDP
+  #   cidr_blocks = ["0.0.0.0/0"] # Разрешаем ходить с инета
+  # }
   egress { # Входящий
     from_port   = 0
     to_port     = 0
