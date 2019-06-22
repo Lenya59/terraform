@@ -48,16 +48,16 @@ resource "aws_subnet" "front_subnet" {
   }
 }
 
-# resource "aws_subnet" "backend_subnet" {
-#   vpc_id                  = "${aws_vpc.aws_vpc.id}"
-#   cidr_block              = var.cidr["nat_subset"]
-#   map_public_ip_on_launch = "false"
-#   availability_zone       = "us-east-1a"
-#   tags {
-#     Name = "backend_subnet"
-#   }
-# }
-#
+resource "aws_subnet" "private" {
+  vpc_id            = aws_vpc.main-vpc.id
+  cidr_block        = var.cidr["private_subnet"]
+  availability_zone = "us-east-1a"
+
+  tags = {
+    Name = "private_subnet"
+  }
+}
+
 # resource "aws_subnet" "service_subnet" {
 #   vpc_id                  = "${aws_vpc.aws_vpc.id}"
 #   cidr_block              = var.cidr["private_subnet"]
@@ -195,12 +195,11 @@ resource "aws_security_group" "front" {
 ##
 ## Create aws_instanse for "front"
 ##
-################################################################################
+##########################################   ######################################
 resource "aws_instance" "front" {
   ami                    = var.ami
   instance_type          = var.instance_type
   tags                   = { name = "frontend" }
-  private_ip             = "10.20.0.12"
   subnet_id              = "${aws_subnet.front_subnet.id}"
   vpc_security_group_ids = [aws_security_group.front.id] #Берем айди секюрити групы после ее создания
   user_data              = file("install_httpd.sh")
@@ -210,9 +209,23 @@ resource "aws_instance" "front" {
 ## Create two another instances
 ##
 ################################################################################
-# resource "aws_instance" "back" {
-#   count         = length(var.amis_tags)
-#   ami           = var.ami
-#   instance_type = var.instance_type
-#   tags          = { name = element(var.amis_tags, count.index) }
-# }
+##
+##   Backend instance
+##
+resource "aws_instance" "back" {
+  ami           = var.ami
+  instance_type = var.instance_type
+  tags          = { name = "back" }
+  subnet_id     = "${aws_subnet.private.id}"
+
+}
+##
+##
+##
+resource "aws_instance" "services" {
+  ami           = var.ami
+  instance_type = var.instance_type
+  tags          = { name = "services" }
+  subnet_id     = "${aws_subnet.private.id}"
+
+}
