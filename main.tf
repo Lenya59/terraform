@@ -48,7 +48,7 @@ resource "aws_subnet" "front_subnet" {
   }
 }
 
-resource "aws_subnet" "private" {
+resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.main-vpc.id
   cidr_block        = var.cidr["private_subnet"]
   availability_zone = "us-east-1a"
@@ -58,13 +58,13 @@ resource "aws_subnet" "private" {
   }
 }
 
-# resource "aws_subnet" "service_subnet" {
-#   vpc_id                  = "${aws_vpc.aws_vpc.id}"
-#   cidr_block              = var.cidr["private_subnet"]
-#   map_public_ip_on_launch = false
-#   availability_zone       = "us-east-1a"
-#   tags {
-#     Name = "services_subnet"
+# resource "aws_subnet" "back_subnet" {
+#   vpc_id     = aws_vpc.main-vpc.id
+#   cidr_block = "10.20.2.0/24"
+#   #  cidr_block        = var.cidr["public_subnet"]
+#   availability_zone = "us-east-1a"
+#   tags = {
+#     Name = "back_subnet"
 #   }
 # }
 ################################################################################
@@ -83,15 +83,20 @@ resource "aws_internet_gateway" "gw" {
 ## https://www.terraform.io/docs/providers/aws/r/nat_gateway.html
 ##
 ################################################################################
-# resource "aws_nat_gateway" "gw" {
-#   allocation_id = "${aws_eip.nat.id}"
-#   subnet_id     = "${aws_subnet.public.id}"
-#   depends_on    = ["aws_internet_gateway.gw"]
-#
-#   tags = {
-#     Name = "gw NAT"
-#   }
-# }
+
+resource "aws_eip" "nat" {
+  vpc = true
+}
+
+resource "aws_nat_gateway" "gw" {
+  allocation_id = "${aws_eip.nat.id}"
+  subnet_id     = "${aws_subnet.front_subnet.id}"
+  depends_on    = ["aws_internet_gateway.gw"]
+
+  tags = {
+    Name = "gw NAT"
+  }
+}
 #
 ################################################################################
 ##
@@ -101,7 +106,16 @@ resource "aws_internet_gateway" "gw" {
 ##   https://www.terraform.io/docs/providers/aws/r/route_table.html
 ##
 ################################################################################
-resource "aws_route_table" "rtb" {
+resource "aws_route_table" "private_subnet_rt" {
+  vpc_id = "${aws_vpc.main-vpc.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.gw.id}"
+  }
+}
+
+resource "aws_route_table" "public_subnet_rt" {
   vpc_id = "${aws_vpc.main-vpc.id}"
 
   route {
@@ -118,7 +132,12 @@ resource "aws_route_table" "rtb" {
 ################################################################################
 resource "aws_route_table_association" "rta_public_subnet" {
   subnet_id      = "${aws_subnet.front_subnet.id}"
-  route_table_id = "${aws_route_table.rtb.id}"
+  route_table_id = "${aws_route_table.public_subnet_rt.id}"
+}
+
+resource "aws_route_table_association" "rta_private_subnet" {
+  subnet_id      = "${aws_subnet.front_subnet.id}"
+  route_table_id = "${aws_route_table.private_subnet_rt.id}"
 }
 ################################################################################
 ##
@@ -182,6 +201,29 @@ resource "aws_security_group" "front" {
     Name = "front_acces"
   }
 }
+
+resource "aws_security_group" "access_via_nat" {
+  name        = "Access via nat"
+  description = "Access to nat instance"
+  vpc_id      = "${aws_vpc.main-vpc.id}"
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+    Name = "Nat access"
+  }
+}
 # next one's need to use in this task:
 #  https://www.terraform.io/docs/providers/aws/r/network_acl.html
 #  https://www.terraform.io/docs/providers/aws/r/network_acl_rule.html
@@ -213,10 +255,12 @@ resource "aws_instance" "front" {
 ##   Backend instance
 ##
 resource "aws_instance" "back" {
-  ami           = var.ami
-  instance_type = var.instance_type
-  tags          = { name = "back" }
-  subnet_id     = "${aws_subnet.private.id}"
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  tags                   = { name = "back" }
+  user_data              = "ping 8.8.8.8"
+  subnet_id              = "${aws_subnet.front_subnet.id}"
+  vpc_security_group_ids = [aws_security_group.access_via_nat.id]
 
 }
 ##
@@ -226,6 +270,7 @@ resource "aws_instance" "services" {
   ami           = var.ami
   instance_type = var.instance_type
   tags          = { name = "services" }
-  subnet_id     = "${aws_subnet.private.id}"
+  user_data     = "ping 8.8.8.8"
+  subnet_id     = "${aws_subnet.private_subnet.id}"
 
 }
