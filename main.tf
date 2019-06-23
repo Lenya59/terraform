@@ -48,7 +48,11 @@ resource "aws_subnet" "front_subnet" {
   }
 }
 
+<<<<<<< HEAD
 resource "aws_subnet" "back_subnet" {
+=======
+resource "aws_subnet" "private_subnet" {
+>>>>>>> 21b80a684b9a8f963bb2ff39de8e005ed1ad7c91
   vpc_id            = aws_vpc.main-vpc.id
   cidr_block        = var.cidr["back"]
   availability_zone = "us-east-1a"
@@ -280,7 +284,7 @@ resource "aws_instance" "front" {
 ##   Backend instance
 ##
 resource "aws_instance" "back" {
-  ami                    = "ami-00a9d4a05375b2763"
+  ami                    = var.ami
   instance_type          = var.instance_type
   tags                   = { name = "back" }
   user_data              = "ping 8.8.8.8"
