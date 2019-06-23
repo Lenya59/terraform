@@ -48,17 +48,13 @@ resource "aws_subnet" "front_subnet" {
   }
 }
 
-<<<<<<< HEAD
 resource "aws_subnet" "back_subnet" {
-=======
-resource "aws_subnet" "private_subnet" {
->>>>>>> 21b80a684b9a8f963bb2ff39de8e005ed1ad7c91
-  vpc_id            = aws_vpc.main-vpc.id
-  cidr_block        = var.cidr["back"]
+  vpc_id     = aws_vpc.main-vpc.id
+  cidr_block = var.cidr["back"]
+  #map_public_ip_on_launch = true
   availability_zone = "us-east-1a"
-
   tags = {
-    Name = "private_subnet"
+    Name = "back_subnet"
   }
 }
 
@@ -67,7 +63,7 @@ resource "aws_subnet" "services_subnet" {
   cidr_block        = var.cidr["services"]
   availability_zone = "us-east-1a"
   tags = {
-    Name = "back_subnet"
+    Name = "services_subnet"
   }
 }
 ################################################################################
@@ -88,18 +84,19 @@ resource "aws_internet_gateway" "gw" {
 ################################################################################
 
 resource "aws_eip" "nat" {
-  instance = "${aws_instance.services.id}"
-  vpc      = true
+  #instance   = "${aws_instance.back.id}"
+  vpc        = true
+  depends_on = ["aws_internet_gateway.gw"]
 }
 
 
-resource "aws_nat_gateway" "gw" {
+resource "aws_nat_gateway" "aws_nat_gateway" {
   allocation_id = "${aws_eip.nat.id}"
   subnet_id     = "${aws_subnet.back_subnet.id}"
-  # depends_on    = ["aws_internet_gateway.gw"]
+  depends_on    = ["aws_internet_gateway.gw"]
 
   tags = {
-    Name = "gw NAT"
+    Name = "aws_nat_gateway"
   }
 }
 #
@@ -120,14 +117,14 @@ resource "aws_route_table" "private_subnet_rt" {
   }
 }
 
-resource "aws_route_table" "public_subnet_rt" {
-  vpc_id = "${aws_vpc.main-vpc.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.gw.id}"
-  }
-}
+# resource "aws_route_table" "public_subnet_rt" {
+#   vpc_id = "${aws_vpc.main-vpc.id}"
+#
+#   route {
+#     cidr_block = "0.0.0.0/0"
+#     gateway_id = "${aws_internet_gateway.gw.id}"
+#   }
+# }
 ################################################################################
 ##
 ##  route_table_association
@@ -208,7 +205,6 @@ resource "aws_security_group" "front" {
     Name = "front_acces"
   }
 }
-
 resource "aws_security_group" "access_via_nat" {
   name        = "Access via nat"
   description = "Access to nat instance"
@@ -233,7 +229,7 @@ resource "aws_security_group" "access_via_nat" {
 }
 resource "aws_security_group" "services" {
   name        = "services_sg"
-  description = "acces"
+  description = "Access"
   vpc_id      = "${aws_vpc.main-vpc.id}"
 
   ingress {
@@ -288,7 +284,7 @@ resource "aws_instance" "back" {
   instance_type          = var.instance_type
   tags                   = { name = "back" }
   user_data              = "ping 8.8.8.8"
-  subnet_id              = "${aws_subnet.front_subnet.id}"
+  subnet_id              = "${aws_subnet.back_subnet.id}"
   vpc_security_group_ids = [aws_security_group.access_via_nat.id]
   key_name               = "ssh"
 }

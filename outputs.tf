@@ -8,5 +8,5 @@ output "front_sg_id" {
 }
 
 output "aws_nat_gateway_id" {
-  value = "${aws_nat_gateway.gw.id}"
+  value = "${aws_nat_gateway.aws_nat_gateway.id}"
 }
